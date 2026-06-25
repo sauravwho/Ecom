@@ -54,7 +54,6 @@ public class OrderService {
                         order
                 ))
                 .toList();
-
         order.setItems(orderItems);
 
         Order savedOrder = orderRepository.save(order);

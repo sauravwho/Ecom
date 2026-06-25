@@ -18,17 +18,12 @@ public class UserController {
     private UserService userSeervice;
 
     @GetMapping
-//    @RequestMapping(value = "/api/users", method = RequestMethod.GET)
     public ResponseEntity<List<UserResponse>> getAllUsers(){
-//        return new ResponseEntity<>(userSeervice.fetchAllUsers(), HttpStatus.OK);
         return ResponseEntity.ok(userSeervice.fetchAllUsers());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<UserResponse> getUser(@PathVariable Long id){
-//        User user = userSeervice.fetchUser(id);
-//        if(user == null) return ResponseEntity.notFound().build();
-//        return ResponseEntity.ok(user);
 
         return userSeervice.fetchUser(id)
                 .map(ResponseEntity::ok)
