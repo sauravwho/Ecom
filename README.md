@@ -54,15 +54,3 @@ This is an e-commerce application built using Spring Boot.
     *   Alternatively, you can run the `main` method in the `EcomApplication.java` file from your IDE.
 
 5.  The application will start on `http://localhost:8080` (default port).
-
-## API Endpoints
-
-(Add details about your API endpoints here, e.g., using Swagger/OpenAPI documentation or listing key endpoints.)
-
-## Contributing
-
-(Add guidelines for contributing to the project if applicable.)
-
-## License
-
-(Add license information if applicable.)
