@@ -17,7 +17,7 @@ import java.util.Optional;
 public class OrderService {
 
     private final CartService cartService;
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
     private final OrderRepository orderRepository;
 
     public Optional<OrderResponse> createOrder(String userId) {

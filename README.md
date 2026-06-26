@@ -6,6 +6,14 @@ A Spring Boot based monolithic e-commerce backend application that provides user
 
 ## Features
 
+### Authentication & Authorization
+
+- User registration and login with JWT-based authentication
+- Passwords hashed with BCrypt, never stored or returned in plaintext
+- Stateless sessions — every request after login is authenticated via a `Bearer` token
+- Role-based access control: `CUSTOMER` and `ADMIN` roles, enforced with `@PreAuthorize`
+- Cart and order endpoints derive the user's identity from their JWT, not a client-supplied header
+
 ### User Management
 
 - Create users
@@ -118,6 +126,8 @@ Search products using keywords across:
 - Spring MVC
 - Spring Data JPA
 - Hibernate ORM
+- Spring Security
+- JJWT (JSON Web Tokens)
 
 **Database:**
 
@@ -166,7 +176,17 @@ src/main/java/com/example/ecom
 │   ├── ProductRequest
 │   ├── ProductResponse
 │   ├── OrderResponse
-│   └── AddressDTO
+│   ├── AddressDTO
+│   ├── RegisterRequest
+│   ├── LoginRequest
+│   └── AuthResponse
+│
+├── security
+│   ├── SecurityConfig
+│   ├── JwtUtil
+│   ├── JwtAuthenticationFilter
+│   ├── UserPrincipal
+│   └── CustomUserDetailsService
 │
 └── data
     ├── User
@@ -182,6 +202,51 @@ src/main/java/com/example/ecom
 ---
 
 ## API Endpoints
+
+### Auth APIs
+
+**Register:**
+`POST /api/auth/register`
+
+Request Body:
+```json
+{
+  "firstName": "Saurav",
+  "lastName": "Kumar",
+  "email": "saurav@example.com",
+  "phone": "9999999999",
+  "password": "SecurePass123"
+}
+```
+
+Response includes a JWT — registration logs you in immediately. New accounts are always created with role `CUSTOMER`.
+
+**Login:**
+`POST /api/auth/login`
+
+Request Body:
+```json
+{
+  "email": "saurav@example.com",
+  "password": "SecurePass123"
+}
+```
+
+Response:
+```json
+{
+  "token": "<jwt>",
+  "tokenType": "Bearer",
+  "userId": 1,
+  "email": "saurav@example.com",
+  "role": "CUSTOMER"
+}
+```
+
+For every endpoint below except `/api/auth/**`, Swagger, and `/actuator/health`, send the token on subsequent requests:
+`Authorization: Bearer <jwt>`
+
+---
 
 ### User APIs
 
@@ -201,16 +266,16 @@ src/main/java/com/example/ecom
 
 ### Product APIs
 
-**Create Product:**
+**Create Product** *(ADMIN only)*:
 `POST /api/products`
 
 **Get All Active Products:**
 `GET /api/products`
 
-**Update Product:**
+**Update Product** *(ADMIN only)*:
 `PUT /api/products/{id}`
 
-**Delete Product (Soft Delete):**
+**Delete Product (Soft Delete)** *(ADMIN only)*:
 `DELETE /api/products/{id}`
 
 **Search Products:**
@@ -220,7 +285,7 @@ src/main/java/com/example/ecom
 
 ### Cart APIs
 
-All cart requests require `X-User-ID` header.
+All cart requests require a valid JWT (`Authorization: Bearer <jwt>`). The user is identified from the token — there is no client-supplied user ID.
 
 **Add Product To Cart:**
 `POST /api/cart`
@@ -236,9 +301,6 @@ Request Body:
 **View Cart:**
 `GET /api/cart`
 
-Header:
-`X-User-ID: 1`
-
 **Remove Product From Cart:**
 `DELETE /api/cart/items/{productId}`
 
@@ -249,13 +311,10 @@ Example:
 
 ### Order APIs
 
-All order requests require `X-User-ID` header.
+All order requests require a valid JWT (`Authorization: Bearer <jwt>`).
 
 **Create Order:**
 `POST /api/orders`
-
-Header:
-`X-User-ID: 1`
 
 Response:
 - Order ID
@@ -288,16 +347,28 @@ Response:
 
 ---
 
-## Database Configuration
+## Database & JWT Configuration
 
+The application uses environment variables for sensitive configurations. A template file `application.properties.example` is provided for local development.
+
+Example configuration in `src/main/resources/application.properties.example`:
 ```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/Ecom
-spring.datasource.username=postgres
-spring.datasource.password=jdbc@admin
+spring.datasource.url=${DB_URL:jdbc:postgresql://localhost:5432/Ecom}
+spring.datasource.username=${DB_USERNAME:postgres}
+spring.datasource.password=${DB_PASSWORD:your_db_password}
 
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+
+jwt.secret=${JWT_SECRET:your_jwt_secret}
+jwt.expiration-ms=${JWT_EXPIRATION_MS:86400000}
 ```
+
+**Important:**
+- Create a file named `application.properties` in `src/main/resources/` (it's ignored by Git).
+- Copy the content from `application.properties.example` into `application.properties`.
+- **Replace `your_db_password` and `your_jwt_secret` with actual secure values.**
+- For non-local environments (e.g., production), always set `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, and `JWT_SECRET` via environment variables. Never commit actual secrets to source control.
 
 ---
 
@@ -331,17 +402,25 @@ or
 java -jar target/Ecom-0.0.1-SNAPSHOT.jar
 ```
 
+### Run Tests
+
+```bash
+mvn clean test
+```
+
+Tests run against an in-memory H2 database (configured in `src/test/resources/application.properties`), so no local PostgreSQL instance is needed to run the suite. Includes unit tests (Mockito) for the service layer and full integration tests (MockMvc) covering registration, login, role-based access control, and the end-to-end cart-to-checkout flow.
+
 ---
 
 ## Sample Business Flow
 
-**Step 1: Create User**
-`POST /api/users`
+**Step 1: Register**
+`POST /api/auth/register` → returns a JWT
 
-**Step 2: Create Product**
+**Step 2: Create Product** *(ADMIN token required)*
 `POST /api/products`
 
-**Step 3: Add Product To Cart**
+**Step 3: Add Product To Cart** *(customer token)*
 `POST /api/cart`
 
 **Step 4: View Cart**
@@ -362,8 +441,6 @@ The system:
 
 ## Future Enhancements
 
-- JWT Authentication
-- Role-Based Access Control (RBAC)
 - Payment Gateway Integration
 - Order History API
 - Order Status Tracking
@@ -375,7 +452,7 @@ The system:
 - Email Notifications
 - Audit Logging
 - API Rate Limiting
-- Unit and Integration Tests
+- Refresh tokens / token revocation
 
 ---
 

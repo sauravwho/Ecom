@@ -2,11 +2,14 @@ package com.example.ecom.service;
 
 import com.example.ecom.data.Address;
 import com.example.ecom.data.User;
+import com.example.ecom.data.UserRole;
 import com.example.ecom.dto.AddressDTO;
+import com.example.ecom.dto.RegisterRequest;
 import com.example.ecom.dto.UserRequest;
 import com.example.ecom.dto.UserResponse;
 import com.example.ecom.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
@@ -16,6 +19,38 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserService {
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+
+    /**
+     * Registers a new user with a securely hashed password.
+     * Role is always forced to CUSTOMER here — never trust a client-supplied
+     * role on a public registration endpoint, or anyone could self-register as ADMIN.
+     */
+    public Optional<User> registerUser(RegisterRequest request) {
+        if (userRepository.existsByEmail(request.getEmail())) {
+            return Optional.empty();
+        }
+
+        User user = new User();
+        user.setFirstname(request.getFirstName());
+        user.setLastname(request.getLastName());
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole(UserRole.CUSTOMER);
+
+        if (request.getAddress() != null) {
+            Address address = new Address();
+            address.setStreet(request.getAddress().getStreet());
+            address.setCity(request.getAddress().getCity());
+            address.setState(request.getAddress().getState());
+            address.setCountry(request.getAddress().getCountry());
+            address.setZipcode(request.getAddress().getZipcode());
+            user.setAddress(address);
+        }
+
+        return Optional.of(userRepository.save(user));
+    }
 
     public List<UserResponse> fetchAllUsers(){
         return userRepository.findAll().stream()

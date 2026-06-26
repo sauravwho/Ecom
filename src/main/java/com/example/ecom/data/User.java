@@ -1,8 +1,10 @@
 package com.example.ecom.data;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
@@ -17,6 +19,10 @@ public class User {
     private String firstname;
     private String lastname;
     private String email;
+    @JsonIgnore
+    @Column(nullable = false)
+    @ToString.Exclude
+    private String password; // Added password field
     private String phone;
     private UserRole role = UserRole.CUSTOMER;
 

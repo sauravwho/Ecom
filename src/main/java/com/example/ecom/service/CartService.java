@@ -20,9 +20,9 @@ import java.util.Optional;
 @Transactional
 public class CartService {
 
-    private UserRepository userRepository;
-    private CartItemRepository cartItemRepository;
-    private ProductRepository productRepository;
+    private final UserRepository userRepository;
+    private final CartItemRepository cartItemRepository;
+    private final ProductRepository productRepository;
 
     public boolean addToCart(String userId, cartItemRequest request) {
         Optional<Product> pproductOpt = productRepository.findById(request.getProductId());
