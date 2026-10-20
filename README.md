@@ -458,4 +458,4 @@ The system:
 
 ## License
 
-This project is intended for educational and learning purposes and demonstrates a complete monolithic e-commerce backend architecture using Spring Boot, JPA, PostgreSQL, and REST APIs.
+This project is intended for educational and learning purposes and demonstrates a complete monolithic e-commerce backend architecture using Spring Boot, Spring Data JPA, PostgreSQL, and REST APIs.
